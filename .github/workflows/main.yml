@@ -22,15 +22,18 @@ jobs:
           sudo apt update && sudo apt install vault
       
       - name: Authenticate to Vault via OIDC
+        env:
+          VAULT_ADDR: "https://vault-cluster-public-vault-b32ba3e5.34198e2e.z1.hashicorp.cloud:8200"
+          VAULT_NAMESPACE: "admin"
         run: |
-          export VAULT_ADDR="https://vault-cluster-public-vault-b32ba3e5.34198e2e.z1.hashicorp.cloud:8200"
-          export VAULT_NAMESPACE="admin"
+          # Отримати JWT токен від GitHub з правильним audience
+          GITHUB_JWT=$(curl -sLS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://github.com/Mayored" | jq -r '.value')
+          echo "JWT токен отримано"
           
-          # Отримати JWT токен від GitHub
-          GITHUB_TOKEN=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=vault" | jq -r '.value')
-          
-          # Автентифікуватись у Vault
-          vault write auth/jwt/login role=github-readonly jwt=$GITHUB_TOKEN
+          # Автентифікуватись у Vault з роллю github-readonly
+          VAULT_TOKEN=$(vault write -field=token auth/jwt/login role=github-readonly jwt=$GITHUB_JWT)
+          echo "VAULT_TOKEN=$VAULT_TOKEN" >> $GITHUB_ENV
+          echo "✅ Успішна автентифікація у Vault!"
           
       - name: Read secret from Vault
         run: |
