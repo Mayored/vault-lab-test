@@ -1,12 +1,16 @@
-provider "aws" {
-  region = var.region
+terraform {
+  required_providers {
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
 }
 
-resource "aws_instance" "example" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Amazon Linux 2 AMI
-  instance_type = var.instance_type
+resource "random_id" "example" {
+  byte_length = 8
+}
 
-  tags = {
-    Name = "terraform-cloud-example"
-  }
+output "random_value" {
+  value = random_id.example.hex
 }
